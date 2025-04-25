@@ -50,9 +50,16 @@ type ExcludeEntry struct {
 	Name    string `yaml:"name"`
 }
 
-type groupVersionKindName struct {
-	Gvk  schema.GroupVersionKind
-	Name string
+func (e ExcludeEntry) matches(item object) bool {
+	return (item.GroupVersionKind().Group == e.Group || e.Group == "*") &&
+		(item.GroupVersionKind().Version == e.Version || e.Version == "*") &&
+		(item.GroupVersionKind().Kind == e.Kind || e.Kind == "*") &&
+		(item.GetName() == e.Name || e.Name == "*")
+}
+
+type object interface {
+	metaV1.Object
+	schema.ObjectKind
 }
 
 // NewRestorePluginV2 instantiates a v2 RestorePlugin.
