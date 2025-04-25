@@ -115,21 +115,8 @@ func (p *RestorePluginV2) Execute(input *velero.RestoreItemActionExecuteInput) (
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
-	var shouldBeExcluded []groupVersionKindName
-	for _, entry := range exclude.Exclude {
-		gvk := schema.GroupVersionKind{
-			Group:   entry.Group,
-			Version: entry.Version,
-			Kind:    entry.Kind,
-		}
-		shouldBeExcluded = append(shouldBeExcluded, groupVersionKindName{
-			Gvk:  gvk,
-			Name: entry.Name,
-		})
-	}
-
-	for _, excludedElement := range shouldBeExcluded {
-		if excludedElement.matches(gvkn) {
+	for _, excludedElement := range exclude.Exclude {
+		if excludedElement.matches(itemUnstructured) {
 			return &velero.RestoreItemActionExecuteOutput{SkipRestore: true}, nil
 		}
 	}
