@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PKG := github.com/vmware-tanzu/velero-plugin-example
-BIN := velero-plugin-example
+PKG := github.com/cloudogu/velero-plugin-for-restore-exclude
+BIN := velero-plugin-for-restore-exclude
 
-REGISTRY ?= k3ces.local:30099#velero
-IMAGE    ?= $(REGISTRY)/velero-plugin-example/main
+REGISTRY ?= k3ces.local:30099
+IMAGE    ?= $(REGISTRY)/velero-plugin-for-restore-exclude/main
 VERSION  ?= 0.0.1
 
 GOOS   ?= $(shell go env GOOS)

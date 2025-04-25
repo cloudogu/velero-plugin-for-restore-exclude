@@ -1,4 +1,4 @@
-module github.com/vmware-tanzu/velero-plugin-example
+module github.com/cloudogu/velero-plugin-for-restore-exclude
 
 go 1.21
 

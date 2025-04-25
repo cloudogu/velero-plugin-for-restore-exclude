@@ -17,8 +17,8 @@ limitations under the License.
 package main
 
 import (
+	"github.com/cloudogu/velero-plugin-for-restore-exclude/internal/plugin"
 	"github.com/sirupsen/logrus"
-	"github.com/vmware-tanzu/velero-plugin-example/internal/plugin"
 	"github.com/vmware-tanzu/velero/pkg/plugin/framework"
 )
 
