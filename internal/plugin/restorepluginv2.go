@@ -22,8 +22,6 @@ import (
 	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"strings"
 	"time"
 
@@ -41,7 +39,8 @@ const (
 
 // RestorePlugin is a restore item action plugin for Velero
 type RestorePluginV2 struct {
-	log logrus.FieldLogger
+	log       logrus.FieldLogger
+	clientset coreV1Interface
 }
 
 type ExcludeEntry struct {
@@ -57,8 +56,11 @@ type groupVersionKindName struct {
 }
 
 // NewRestorePluginV2 instantiates a v2 RestorePlugin.
-func NewRestorePluginV2(log logrus.FieldLogger) *RestorePluginV2 {
-	return &RestorePluginV2{log: log}
+func NewRestorePluginV2(log logrus.FieldLogger, clientset coreV1Interface) *RestorePluginV2 {
+	return &RestorePluginV2{
+		log:       log,
+		clientset: clientset,
+	}
 }
 
 // Name is required to implement the interface, but the Velero pod does not delegate this
@@ -82,7 +84,7 @@ func (p *RestorePluginV2) AppliesTo() (velero.ResourceSelector, error) {
 func (p *RestorePluginV2) Execute(input *velero.RestoreItemActionExecuteInput) (*velero.RestoreItemActionExecuteOutput, error) {
 	itemUnstructured, ok := input.Item.(*unstructured.Unstructured)
 	if !ok {
-		return nil, fmt.Errorf("failed to parse element")
+		return nil, fmt.Errorf("failed to parse input")
 	}
 
 	gvkn := groupVersionKindName{
@@ -90,16 +92,7 @@ func (p *RestorePluginV2) Execute(input *velero.RestoreItemActionExecuteInput) (
 		Name: itemUnstructured.GetName(),
 	}
 
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get cluster config: %w", err)
-	}
-	clientSet, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create kubernetes client: %w", err)
-	}
-
-	configMap, err := clientSet.CoreV1().ConfigMaps(Namespace).Get(context.TODO(), ConfigMapName, metaV1.GetOptions{})
+	configMap, err := p.clientset.ConfigMaps(Namespace).Get(context.TODO(), ConfigMapName, metaV1.GetOptions{})
 	if err != nil {
 		return &velero.RestoreItemActionExecuteOutput{
 			UpdatedItem: input.Item,

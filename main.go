@@ -17,9 +17,12 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"github.com/cloudogu/velero-plugin-for-restore-exclude/internal/plugin"
 	"github.com/sirupsen/logrus"
 	"github.com/vmware-tanzu/velero/pkg/plugin/framework"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 func main() {
@@ -29,5 +32,13 @@ func main() {
 }
 
 func newRestorePluginV2(logger logrus.FieldLogger) (interface{}, error) {
-	return plugin.NewRestorePluginV2(logger), nil
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cluster config: %w", err)
+	}
+	clientSet, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create kubernetes client: %w", err)
+	}
+	return plugin.NewRestorePluginV2(logger, clientSet.CoreV1()), nil
 }
