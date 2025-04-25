@@ -40,7 +40,7 @@ const (
 // RestorePlugin is a restore item action plugin for Velero
 type RestorePluginV2 struct {
 	log       logrus.FieldLogger
-	clientset coreV1Interface
+	clientset configMapInterface
 }
 
 type ExcludeEntry struct {
@@ -56,7 +56,7 @@ type groupVersionKindName struct {
 }
 
 // NewRestorePluginV2 instantiates a v2 RestorePlugin.
-func NewRestorePluginV2(log logrus.FieldLogger, clientset coreV1Interface) *RestorePluginV2 {
+func NewRestorePluginV2(log logrus.FieldLogger, clientset configMapInterface) *RestorePluginV2 {
 	return &RestorePluginV2{
 		log:       log,
 		clientset: clientset,
@@ -92,7 +92,7 @@ func (p *RestorePluginV2) Execute(input *velero.RestoreItemActionExecuteInput) (
 		Name: itemUnstructured.GetName(),
 	}
 
-	configMap, err := p.clientset.ConfigMaps(Namespace).Get(context.TODO(), ConfigMapName, metaV1.GetOptions{})
+	configMap, err := p.clientset.Get(context.Background(), ConfigMapName, metaV1.GetOptions{})
 	if err != nil {
 		return &velero.RestoreItemActionExecuteOutput{
 			UpdatedItem: input.Item,

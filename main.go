@@ -40,5 +40,5 @@ func newRestorePluginV2(logger logrus.FieldLogger) (interface{}, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kubernetes client: %w", err)
 	}
-	return plugin.NewRestorePluginV2(logger, clientSet.CoreV1()), nil
+	return plugin.NewRestorePluginV2(logger, clientSet.CoreV1().ConfigMaps("ecosystem")), nil
 }
