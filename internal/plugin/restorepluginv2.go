@@ -35,13 +35,8 @@ import (
 )
 
 const (
-	// If this annotation is found on the Velero Restore CR, then create an operation
-	// that is considered done at backup start time + example RIA operation duration
-	// If this annotation is not present, then operationID returned from Execute() will
-	// be empty.
-	// This annotation can also be set on the item, which overrides the restore CR value,
-	// to allow for testing multiple action lengths
-	AsyncRIADurationAnnotation = "velero.io/example-ria-operation-duration"
+	Namespace     = "ecosystem"
+	ConfigMapName = "velero-plugin-for-restore-exclude-config"
 )
 
 // RestorePlugin is a restore item action plugin for Velero
@@ -85,23 +80,17 @@ func (p *RestorePluginV2) AppliesTo() (velero.ResourceSelector, error) {
 // Execute allows the RestorePlugin to perform arbitrary logic with the item being restored,
 // in this case, setting a custom annotation on the item being restored.
 func (p *RestorePluginV2) Execute(input *velero.RestoreItemActionExecuteInput) (*velero.RestoreItemActionExecuteOutput, error) {
-	p.log.Info("Hello from my RestorePlugin(v2)!")
 
-	p.log.Info("-----Parse element to Unstructured-----")
 	itemUnstructured, ok := input.Item.(*unstructured.Unstructured)
 	if !ok {
-		p.log.Errorf("failed to parse element")
-	} else {
-		p.log.Infof("parsed element: %q", itemUnstructured)
+		return nil, fmt.Errorf("failed to parse element")
 	}
 
 	gvkn := groupVersionKindName{
 		Gvk:  itemUnstructured.GroupVersionKind(),
 		Name: itemUnstructured.GetName(),
 	}
-	p.log.Infof("gvkn: %s", gvkn)
 
-	p.log.Info("-----Create kubernetes client-----")
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cluster config: %w", err)
@@ -111,8 +100,7 @@ func (p *RestorePluginV2) Execute(input *velero.RestoreItemActionExecuteInput) (
 		return nil, fmt.Errorf("failed to create kubernetes client: %w", err)
 	}
 
-	p.log.Info("-----Read ConfigMap-----")
-	configMap, err := clientSet.CoreV1().ConfigMaps("ecosystem").Get(context.TODO(), "velero-plugin-for-restore-exclude-config", metaV1.GetOptions{})
+	configMap, err := clientSet.CoreV1().ConfigMaps(Namespace).Get(context.TODO(), ConfigMapName, metaV1.GetOptions{})
 	if err != nil {
 		return &velero.RestoreItemActionExecuteOutput{
 			UpdatedItem: input.Item,
@@ -124,7 +112,6 @@ func (p *RestorePluginV2) Execute(input *velero.RestoreItemActionExecuteInput) (
 		Exclude []ExcludeEntry `yaml:"exclude"`
 	}
 
-	p.log.Info("-----Unmarshal configmap-----")
 	err = yaml.Unmarshal([]byte(shouldBeExcludedString), &exclude)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
@@ -142,15 +129,12 @@ func (p *RestorePluginV2) Execute(input *velero.RestoreItemActionExecuteInput) (
 		})
 	}
 
-	p.log.Info("-----Check if element is excluded-----")
 	for _, excludedElement := range shouldBeExcluded {
 		if excludedElement.matches(gvkn) {
-			p.log.Info("-----Exclude element-----")
-			p.log.Info(gvkn.Name)
 			return &velero.RestoreItemActionExecuteOutput{SkipRestore: true}, nil
 		}
 	}
-	p.log.Info("-----Return result-----")
+
 	return &velero.RestoreItemActionExecuteOutput{
 		UpdatedItem: input.Item,
 	}, nil
@@ -196,27 +180,4 @@ func (g groupVersionKindName) matches(gvkn groupVersionKindName) bool {
 		(gvkn.Gvk.Version == g.Gvk.Version || g.Gvk.Version == "*" || g.Gvk.Version == "") &&
 		(gvkn.Gvk.Kind == g.Gvk.Kind || g.Gvk.Kind == "*" || g.Gvk.Kind == "") &&
 		(gvkn.Name == g.Name || g.Name == "*" || g.Name == "")
-}
-
-func groupVersionKind(resource unstructured.Unstructured) groupVersionKindName {
-	return groupVersionKindName{
-		Gvk:  resource.GroupVersionKind(),
-		Name: resource.GetName(),
-	}
-}
-
-func parseValue(input map[string]interface{}, key string) (string, map[string]interface{}, error) {
-	val, exists := input[key]
-	if exists {
-		return "", nil, fmt.Errorf("key %q not found", key)
-	}
-
-	switch v := val.(type) {
-	case string:
-		return v, nil, nil
-	case map[string]interface{}:
-		return "", v, nil
-	default:
-		return "", nil, fmt.Errorf("unexpected type %T", val)
-	}
 }
