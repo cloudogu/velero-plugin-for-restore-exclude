@@ -6,3 +6,4 @@ velero-plugin-example
 _tiltbuild
 
 .idea
+vendor
