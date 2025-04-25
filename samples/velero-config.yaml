@@ -26,5 +26,7 @@ data:
   restore: |
     exclude:
       - name: "ces-loadbalancer"
+        group: "*"
+        version: "*"
         kind: "Service"
 # add your configuration data here as key-value pairs
