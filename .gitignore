@@ -7,3 +7,4 @@ _tiltbuild
 
 .idea
 vendor
+.bin
