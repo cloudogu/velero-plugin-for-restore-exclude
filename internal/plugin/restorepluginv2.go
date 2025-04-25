@@ -65,7 +65,7 @@ func NewRestorePluginV2(log logrus.FieldLogger) *RestorePluginV2 {
 // method -- it's used to tell velero what name it was registered under. The plugin implementation
 // must define it, but it will never actually be called.
 func (p *RestorePluginV2) Name() string {
-	return "exampleRestorePlugin"
+	return "velero-plugin-for-restore-exclude"
 }
 
 // AppliesTo returns information about which resources this action should be invoked for.
@@ -80,7 +80,6 @@ func (p *RestorePluginV2) AppliesTo() (velero.ResourceSelector, error) {
 // Execute allows the RestorePlugin to perform arbitrary logic with the item being restored,
 // in this case, setting a custom annotation on the item being restored.
 func (p *RestorePluginV2) Execute(input *velero.RestoreItemActionExecuteInput) (*velero.RestoreItemActionExecuteOutput, error) {
-
 	itemUnstructured, ok := input.Item.(*unstructured.Unstructured)
 	if !ok {
 		return nil, fmt.Errorf("failed to parse element")
@@ -176,8 +175,8 @@ func (p *RestorePluginV2) AreAdditionalItemsReady(additionalItems []velero.Resou
 }
 
 func (g groupVersionKindName) matches(gvkn groupVersionKindName) bool {
-	return (gvkn.Gvk.Group == g.Gvk.Group || g.Gvk.Group == "*" || g.Gvk.Group == "") &&
-		(gvkn.Gvk.Version == g.Gvk.Version || g.Gvk.Version == "*" || g.Gvk.Version == "") &&
-		(gvkn.Gvk.Kind == g.Gvk.Kind || g.Gvk.Kind == "*" || g.Gvk.Kind == "") &&
-		(gvkn.Name == g.Name || g.Name == "*" || g.Name == "")
+	return (gvkn.Gvk.Group == g.Gvk.Group || g.Gvk.Group == "*" || g.Gvk.Group == "" || gvkn.Gvk.Group == "*") &&
+		(gvkn.Gvk.Version == g.Gvk.Version || g.Gvk.Version == "*" || g.Gvk.Version == "" || gvkn.Gvk.Version == "*") &&
+		(gvkn.Gvk.Kind == g.Gvk.Kind || g.Gvk.Kind == "*" || g.Gvk.Kind == "" || gvkn.Gvk.Kind == "*") &&
+		(gvkn.Name == g.Name || g.Name == "*" || g.Name == "" || gvkn.Name == "*")
 }
