@@ -174,9 +174,3 @@ func (p *RestorePluginV2) AreAdditionalItemsReady(additionalItems []velero.Resou
 	return true, nil
 }
 
-func (g groupVersionKindName) matches(gvkn groupVersionKindName) bool {
-	return (gvkn.Gvk.Group == g.Gvk.Group || g.Gvk.Group == "*" || g.Gvk.Group == "" || gvkn.Gvk.Group == "*") &&
-		(gvkn.Gvk.Version == g.Gvk.Version || g.Gvk.Version == "*" || g.Gvk.Version == "" || gvkn.Gvk.Version == "*") &&
-		(gvkn.Gvk.Kind == g.Gvk.Kind || g.Gvk.Kind == "*" || g.Gvk.Kind == "" || gvkn.Gvk.Kind == "*") &&
-		(gvkn.Name == g.Name || g.Name == "*" || g.Name == "" || gvkn.Name == "*")
-}
