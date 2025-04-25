@@ -17,7 +17,7 @@ BIN := velero-plugin-example
 
 REGISTRY ?= k3ces.local:30099#velero
 IMAGE    ?= $(REGISTRY)/velero-plugin-example/main
-VERSION  ?= 0.0.2
+VERSION  ?= 0.0.1
 
 GOOS   ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)

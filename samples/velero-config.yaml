@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   # any name can be used; Velero uses the labels (below)
   # to identify it rather than the name
-  name: my-plugin-config
+  name: velero-plugin-for-restore-exclude-config
 
   # must be in the namespace where the velero deployment
   # is running
@@ -20,6 +20,7 @@ metadata:
     # value is the plugin type (BackupItemAction, RestoreItemAction,
     # ObjectStore, or VolumeSnapshotter)
     velero-plugin-example: RestoreItemAction
+    k8s.cloudogu.com/part-of: backup
 
 data:
   restore: |

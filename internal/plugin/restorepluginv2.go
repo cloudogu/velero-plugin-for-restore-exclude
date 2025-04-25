@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"gopkg.in/yaml.v3"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -86,9 +87,19 @@ func (p *RestorePluginV2) AppliesTo() (velero.ResourceSelector, error) {
 func (p *RestorePluginV2) Execute(input *velero.RestoreItemActionExecuteInput) (*velero.RestoreItemActionExecuteOutput, error) {
 	p.log.Info("Hello from my RestorePlugin(v2)!")
 
-	p.log.Infof("Element: %s", input.Item)
-	p.log.Info("-----Parse element name-----")
-	elementName := input.Item.UnstructuredContent()["name"].(string)
+	p.log.Info("-----Parse element to Unstructured-----")
+	itemUnstructured, ok := input.Item.(*unstructured.Unstructured)
+	if !ok {
+		p.log.Errorf("failed to parse element")
+	} else {
+		p.log.Infof("parsed element: %q", itemUnstructured)
+	}
+
+	gvkn := groupVersionKindName{
+		Gvk:  itemUnstructured.GroupVersionKind(),
+		Name: itemUnstructured.GetName(),
+	}
+	p.log.Infof("gvkn: %s", gvkn)
 
 	p.log.Info("-----Create kubernetes client-----")
 	config, err := rest.InClusterConfig()
@@ -101,9 +112,11 @@ func (p *RestorePluginV2) Execute(input *velero.RestoreItemActionExecuteInput) (
 	}
 
 	p.log.Info("-----Read ConfigMap-----")
-	configMap, err := clientSet.CoreV1().ConfigMaps("ecosystem").Get(context.TODO(), "my-plugin-config", metaV1.GetOptions{})
+	configMap, err := clientSet.CoreV1().ConfigMaps("ecosystem").Get(context.TODO(), "velero-plugin-for-restore-exclude-config", metaV1.GetOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get configmap: %w", err)
+		return &velero.RestoreItemActionExecuteOutput{
+			UpdatedItem: input.Item,
+		}, fmt.Errorf("failed to get configmap: %w", err)
 	}
 
 	shouldBeExcludedString := configMap.Data["restore"]
@@ -111,6 +124,7 @@ func (p *RestorePluginV2) Execute(input *velero.RestoreItemActionExecuteInput) (
 		Exclude []ExcludeEntry `yaml:"exclude"`
 	}
 
+	p.log.Info("-----Unmarshal configmap-----")
 	err = yaml.Unmarshal([]byte(shouldBeExcludedString), &exclude)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
@@ -129,55 +143,17 @@ func (p *RestorePluginV2) Execute(input *velero.RestoreItemActionExecuteInput) (
 	}
 
 	p.log.Info("-----Check if element is excluded-----")
-	excluded := configMap.Data["excluded-elements"]
-	for _, excludedElement := range splitLines(excluded) {
-		if strings.Contains(elementName, excludedElement) {
+	for _, excludedElement := range shouldBeExcluded {
+		if excludedElement.matches(gvkn) {
 			p.log.Info("-----Exclude element-----")
-			// TODO return &velero.RestoreItemActionExecuteOutput{SkipRestore: true}, nil
+			p.log.Info(gvkn.Name)
+			return &velero.RestoreItemActionExecuteOutput{SkipRestore: true}, nil
 		}
 	}
 	p.log.Info("-----Return result-----")
 	return &velero.RestoreItemActionExecuteOutput{
 		UpdatedItem: input.Item,
 	}, nil
-	/*
-		metadata, err := meta.Accessor(input.Item)
-		if err != nil {
-			return &velero.RestoreItemActionExecuteOutput{}, err
-		}
-
-		annotations := metadata.GetAnnotations()
-		if annotations == nil {
-			annotations = make(map[string]string)
-		}
-
-		annotations["velero.io/my-restore-pluginv2"] = "1"
-
-		metadata.SetAnnotations(annotations)
-
-		duration := ""
-		if durationStr, ok := annotations[AsyncRIADurationAnnotation]; ok && len(durationStr) != 0 {
-			_, err := time.ParseDuration(durationStr)
-			if err == nil {
-				duration = durationStr
-			}
-		}
-		if duration == "" && input.Restore.Annotations != nil {
-			if durationStr, ok := input.Restore.Annotations[AsyncRIADurationAnnotation]; ok && len(durationStr) != 0 {
-				_, err := time.ParseDuration(durationStr)
-				if err == nil {
-					duration = durationStr
-				}
-			}
-		}
-		out := velero.NewRestoreItemActionExecuteOutput(input.Item)
-		// If duration is empty, we don't have an operation so just return the item.
-		if duration != "" {
-			out = out.WithOperationID(string(metadata.GetName()) + "/" + duration)
-		}
-
-		return out, nil
-	*/
 }
 
 func (p *RestorePluginV2) Progress(operationID string, restore *v1.Restore) (velero.OperationProgress, error) {
@@ -215,12 +191,32 @@ func (p *RestorePluginV2) AreAdditionalItemsReady(additionalItems []velero.Resou
 	return true, nil
 }
 
-func splitLines(s string) []string {
-	var result []string
-	for _, line := range strings.Split(s, "\n") {
-		if trimmed := strings.TrimSpace(line); trimmed != "" {
-			result = append(result, trimmed)
-		}
+func (g groupVersionKindName) matches(gvkn groupVersionKindName) bool {
+	return (gvkn.Gvk.Group == g.Gvk.Group || g.Gvk.Group == "*" || g.Gvk.Group == "") &&
+		(gvkn.Gvk.Version == g.Gvk.Version || g.Gvk.Version == "*" || g.Gvk.Version == "") &&
+		(gvkn.Gvk.Kind == g.Gvk.Kind || g.Gvk.Kind == "*" || g.Gvk.Kind == "") &&
+		(gvkn.Name == g.Name || g.Name == "*" || g.Name == "")
+}
+
+func groupVersionKind(resource unstructured.Unstructured) groupVersionKindName {
+	return groupVersionKindName{
+		Gvk:  resource.GroupVersionKind(),
+		Name: resource.GetName(),
 	}
-	return result
+}
+
+func parseValue(input map[string]interface{}, key string) (string, map[string]interface{}, error) {
+	val, exists := input[key]
+	if exists {
+		return "", nil, fmt.Errorf("key %q not found", key)
+	}
+
+	switch v := val.(type) {
+	case string:
+		return v, nil, nil
+	case map[string]interface{}:
+		return "", v, nil
+	default:
+		return "", nil, fmt.Errorf("unexpected type %T", val)
+	}
 }
