@@ -14,7 +14,7 @@
 ARTIFACT_ID=velero-plugin-for-restore-exclude
 #IMAGE=cloudogu/${ARTIFACT_ID}:${VERSION}
 GOTAG?=1.24
-MAKEFILES_VERSION=9.3.2
+MAKEFILES_VERSION=9.9.1
 MOCKERY_VERSION=v2.53.3
 MOCKERY_IGNORED=vendor,build,docs,generated
 
@@ -23,7 +23,7 @@ BIN := velero-plugin-for-restore-exclude
 
 REGISTRY ?= k3ces.local:30099
 IMAGE    ?= $(REGISTRY)/velero-plugin-for-restore-exclude/main
-VERSION  ?= 0.0.1
+VERSION  ?= 0.0.3
 
 GOOS   ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
