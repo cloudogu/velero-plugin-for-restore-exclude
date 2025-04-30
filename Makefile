@@ -22,3 +22,4 @@ include build/make/clean.mk
 include build/make/digital-signature.mk
 include build/make/mocks.mk
 include build/make/k8s.mk
+include build/make/release.mk
