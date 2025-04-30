@@ -309,3 +309,21 @@ func TestRestorePluginV2_Progress(t *testing.T) {
 		})
 	}
 }
+
+func TestRestorePluginV2_Name(t *testing.T) {
+	sut := &RestorePluginV2{}
+	assert.Equal(t, sut.Name(), "velero-plugin-for-restore-exclude")
+}
+
+func TestRestorePluginV2_Cancel(t *testing.T) {
+	sut := &RestorePluginV2{}
+	err := sut.Cancel("", &v12.Restore{})
+	assert.NoError(t, err)
+}
+
+func TestRestorePluginV2_AreAdditionalItemsReady(t *testing.T) {
+	sut := &RestorePluginV2{}
+	ready, err := sut.AreAdditionalItemsReady(nil, &v12.Restore{})
+	assert.NoError(t, err)
+	assert.True(t, ready)
+}
