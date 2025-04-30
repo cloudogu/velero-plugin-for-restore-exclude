@@ -18,7 +18,7 @@ import (
 
 func main() {
 	framework.NewServer().
-		RegisterRestoreItemActionV2("github.com/cloudogu/velero-plugin-for-restore-exclude", newRestorePluginV2).
+		RegisterRestoreItemActionV2("k8s.cloudogu.com/velero-plugin-for-restore-exclude", newRestorePluginV2).
 		Serve()
 }
 
