@@ -49,8 +49,8 @@ func (e ExcludeEntry) matches(item object) bool {
 }
 
 type object interface {
-	metaV1.Object
-	schema.ObjectKind
+	GetName() string
+	GroupVersionKind() schema.GroupVersionKind
 }
 
 // NewRestorePluginV2 instantiates a v2 RestorePlugin.

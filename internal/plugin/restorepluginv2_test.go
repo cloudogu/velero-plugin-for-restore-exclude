@@ -3,43 +3,53 @@ package plugin
 import (
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
 	v12 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
 	"github.com/vmware-tanzu/velero/pkg/plugin/velero"
+
 	v1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"testing"
-	"time"
 )
 
-func Test_groupVersionKindName_matches(t *testing.T) {
-	type fields struct {
-		Gvk  schema.GroupVersionKind
-		Name string
-	}
+type sampleObject struct {
+	name string
+	gvk  schema.GroupVersionKind
+}
+
+func (s sampleObject) GetName() string {
+	return s.name
+}
+
+func (s sampleObject) GroupVersionKind() schema.GroupVersionKind {
+	return s.gvk
+}
+
+func Test_ExcludeEntry_matches(t *testing.T) {
 	tests := []struct {
-		name   string
-		fields fields
-		gvkn   groupVersionKindName
-		want   bool
+		name         string
+		excludeEntry ExcludeEntry
+		object       object
+		want         bool
 	}{
 		{
 			name: "gvkns are identical",
-			fields: fields{
-				Name: "loadbalancer",
-				Gvk: schema.GroupVersionKind{
-					Kind:    "Service",
-					Version: "v1",
-					Group:   "Test",
-				},
+			excludeEntry: ExcludeEntry{
+				Name:    "loadbalancer",
+				Kind:    "Service",
+				Version: "v1",
+				Group:   "Test",
 			},
-			gvkn: groupVersionKindName{
-				Name: "loadbalancer",
-				Gvk: schema.GroupVersionKind{
+			object: sampleObject{
+				name: "loadbalancer",
+				gvk: schema.GroupVersionKind{
 					Kind:    "Service",
 					Version: "v1",
 					Group:   "Test",
@@ -49,17 +59,15 @@ func Test_groupVersionKindName_matches(t *testing.T) {
 		},
 		{
 			name: "gvkns do not match",
-			fields: fields{
-				Name: "loadbalancer",
-				Gvk: schema.GroupVersionKind{
-					Kind:    "Service",
-					Version: "v1",
-					Group:   "Test",
-				},
+			excludeEntry: ExcludeEntry{
+				Name:    "loadbalancer",
+				Kind:    "Service",
+				Version: "v1",
+				Group:   "Test",
 			},
-			gvkn: groupVersionKindName{
-				Name: "loadbalancer",
-				Gvk: schema.GroupVersionKind{
+			object: sampleObject{
+				name: "loadbalancer",
+				gvk: schema.GroupVersionKind{
 					Kind:    "Service",
 					Version: "v2",
 					Group:   "Test",
@@ -69,21 +77,19 @@ func Test_groupVersionKindName_matches(t *testing.T) {
 		},
 
 		{
-			name: "gvkn matches wildcard",
-			fields: fields{
-				Name: "loadbalancer",
-				Gvk: schema.GroupVersionKind{
+			name: "object matches wildcard",
+			excludeEntry: ExcludeEntry{
+				Name:    "*",
+				Kind:    "*",
+				Version: "*",
+				Group:   "*",
+			},
+			object: sampleObject{
+				name: "loadbalancer",
+				gvk: schema.GroupVersionKind{
 					Kind:    "Service",
 					Version: "v1",
 					Group:   "Test",
-				},
-			},
-			gvkn: groupVersionKindName{
-				Name: "*",
-				Gvk: schema.GroupVersionKind{
-					Kind:    "*",
-					Version: "*",
-					Group:   "*",
 				},
 			},
 			want: true,
@@ -91,11 +97,7 @@ func Test_groupVersionKindName_matches(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := groupVersionKindName{
-				Gvk:  tt.fields.Gvk,
-				Name: tt.fields.Name,
-			}
-			if got := g.matches(tt.gvkn); got != tt.want {
+			if got := tt.excludeEntry.matches(tt.object); got != tt.want {
 				t.Errorf("matches() = %v, want %v", got, tt.want)
 			}
 		})
