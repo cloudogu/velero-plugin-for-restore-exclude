@@ -1,17 +1,8 @@
 /*
-Copyright the Velero contributors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+This file is based on code originally licensed unter the Apache License, version 2.0.
+It has been modified by Cloudogu GmbH and is distributed under the AGPL-3.0-only as part of the velero-plugin-for-restore-exclude Project.
+Original code Copyright the Velero contributors.
+Modification Copyright 2025 - present, Cloudogu GmbH
 */
 
 package plugin
@@ -94,11 +85,6 @@ func (p *RestorePluginV2) Execute(input *velero.RestoreItemActionExecuteInput) (
 		return nil, fmt.Errorf("failed to parse input")
 	}
 
-	gvkn := groupVersionKindName{
-		Gvk:  itemUnstructured.GroupVersionKind(),
-		Name: itemUnstructured.GetName(),
-	}
-
 	configMap, err := p.clientset.Get(context.Background(), ConfigMapName, metaV1.GetOptions{})
 	if err != nil {
 		return &velero.RestoreItemActionExecuteOutput{
@@ -160,4 +146,3 @@ func (p *RestorePluginV2) Cancel(operationID string, restore *v1.Restore) error 
 func (p *RestorePluginV2) AreAdditionalItemsReady(additionalItems []velero.ResourceIdentifier, restore *v1.Restore) (bool, error) {
 	return true, nil
 }
-
