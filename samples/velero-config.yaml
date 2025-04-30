@@ -19,14 +19,14 @@ metadata:
     # plugin name (for example mydomain.io/my-plugin-name), and whose
     # value is the plugin type (BackupItemAction, RestoreItemAction,
     # ObjectStore, or VolumeSnapshotter)
-    velero-plugin-example: RestoreItemAction
+    k8s.cloudogu.com/velero-plugin-for-restore-exclude: RestoreItemAction
     k8s.cloudogu.com/part-of: backup
 
 data:
   restore: |
     exclude:
       - name: "ces-loadbalancer"
-        group: "*"
-        version: "*"
+        group: ""
+        version: "v1"
         kind: "Service"
 # add your configuration data here as key-value pairs

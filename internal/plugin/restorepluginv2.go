@@ -28,7 +28,7 @@ const (
 	ConfigMapName = "velero-plugin-for-restore-exclude-config"
 )
 
-// RestorePlugin is a restore item action plugin for Velero
+// RestorePluginV2 is a restore item action plugin for Velero
 type RestorePluginV2 struct {
 	log       logrus.FieldLogger
 	clientset configMapInterface
