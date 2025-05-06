@@ -5,3 +5,5 @@
 !main.go
 !internal
 !vendor
+!build/**/*
+!Makefile

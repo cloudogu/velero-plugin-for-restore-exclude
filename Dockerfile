@@ -6,7 +6,16 @@
 FROM golang:1.24-bookworm AS build
 ENV GOPROXY=https://proxy.golang.org
 WORKDIR /go/src/github.com/cloudogu/velero-plugin-for-restore-exclude
-COPY . .
+COPY go.mod go.mod
+COPY go.sum go.sum
+COPY vendor/ vendor/
+
+COPY main.go main.go
+COPY internal/ internal/
+
+COPY build build
+COPY Makefile Makefile
+
 RUN CGO_ENABLED=0 go build -mod=vendor -o /go/bin/velero-plugin-for-restore-exclude .
 
 FROM busybox:1.33.1 AS busybox
