@@ -134,6 +134,7 @@ void stageStaticAnalysisSonarQube() {
 
 void stageAutomaticRelease() {
     if (gitflow.isReleaseBranch()) {
+        String controllerVersion = makefile.getVersion()
         String pluginVersion = makefile.getVersion()
         String releaseVersion = "v${controllerVersion}".toString()
 
