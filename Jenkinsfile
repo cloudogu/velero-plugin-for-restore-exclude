@@ -34,9 +34,39 @@ node('docker') {
             make 'clean'
         }
 
+        stage('Lint') {
+            lintDockerfile()
+        }
+
+        stage('Check Markdown Links') {
+            Markdown markdown = new Markdown(this, "3.11.0")
+            markdown.check()
+        }
+
+        new Docker(this)
+                .image("golang:${goVersion}")
+                .mountJenkinsUser()
+                .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}")
+                        {
+                            stage('Build') {
+                                make 'compile'
+                            }
+
+                            stage("Unit test") {
+                                make 'unit-test'
+                                junit allowEmptyResults: true, testResults: 'target/unit-tests/*-tests.xml'
+                            }
+
+                            stage("Review dog analysis") {
+                                stageStaticAnalysisReviewDog()
+                            }
+                        }
+
         stage('SonarQube') {
             stageStaticAnalysisSonarQube()
         }
+
+        stageAutomaticRelease()
     }
 }
 
@@ -46,6 +76,28 @@ void gitWithCredentials(String command) {
             script: "git -c credential.helper=\"!f() { echo username='\$GIT_AUTH_USR'; echo password='\$GIT_AUTH_PSW'; }; f\" " + command,
             returnStdout: true
         )
+    }
+}
+
+void stageLintK8SResources() {
+    String kubevalImage = "cytopia/kubeval:0.13"
+    String controllerVersion = makefile.getVersion()
+
+    docker
+            .image(kubevalImage)
+            .inside("-v ${WORKSPACE}/target:/data -t --entrypoint=")
+                    {
+                        sh "kubeval /data/${repositoryName}_${controllerVersion}.yaml --ignore-missing-schemas"
+                    }
+}
+
+void stageStaticAnalysisReviewDog() {
+    def commitSha = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+
+    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'sonarqube-gh', usernameVariable: 'USERNAME', passwordVariable: 'REVIEWDOG_GITHUB_API_TOKEN']]) {
+        withEnv(["CI_PULL_REQUEST=${env.CHANGE_ID}", "CI_COMMIT=${commitSha}", "CI_REPO_OWNER=${repositoryOwner}", "CI_REPO_NAME=${repositoryName}"]) {
+            make 'static-analysis-ci'
+        }
     }
 }
 
@@ -76,6 +128,32 @@ void stageStaticAnalysisSonarQube() {
         def qGate = waitForQualityGate()
         if (qGate.status != 'OK') {
             unstable("Pipeline unstable due to SonarQube quality gate failure")
+        }
+    }
+}
+
+void stageAutomaticRelease() {
+    if (gitflow.isReleaseBranch()) {
+        String pluginVersion = makefile.getVersion()
+        String releaseVersion = "v${controllerVersion}".toString()
+
+        stage('Build & Push Image') {
+            def dockerImage = docker.build("cloudogu/${repositoryName}:${pluginVersion}")
+            docker.withRegistry('https://registry.hub.docker.com/', 'dockerHubCredentials') {
+                dockerImage.push("${pluginVersion}")
+            }
+        }
+
+        stage('Finish Release') {
+            gitflow.finishRelease(releaseVersion, productionReleaseBranch)
+        }
+
+        stage('Sign after Release') {
+            gpg.createSignature()
+        }
+
+        stage('Add Github-Release') {
+            releaseId = github.createReleaseWithChangelog(releaseVersion, changelog, productionReleaseBranch)
         }
     }
 }

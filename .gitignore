@@ -1,0 +1,11 @@
+_output
+velero-plugin-example
+
+.go
+
+_tiltbuild
+
+.idea
+.bin
+target
+.env
