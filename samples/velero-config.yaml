@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  # any name can be used; Velero uses the labels (below)
+  # to identify it rather than the name
+  name: velero-plugin-for-restore-exclude-config
+
+  # must be in the namespace where the velero deployment
+  # is running
+  namespace: ecosystem
+
+  labels:
+    # this value-less label identifies the ConfigMap as
+    # config for a plugin (the built-in change storageclass
+    # restore item action plugin)
+    velero.io/plugin-config: ""
+
+    # add a label whose key corresponds to the fully-qualified
+    # plugin name (for example mydomain.io/my-plugin-name), and whose
+    # value is the plugin type (BackupItemAction, RestoreItemAction,
+    # ObjectStore, or VolumeSnapshotter)
+    k8s.cloudogu.com/velero-plugin-for-restore-exclude: RestoreItemAction
+    k8s.cloudogu.com/part-of: backup
+
+data:
+  restore: |
+    exclude:
+      - name: "ces-loadbalancer"
+        group: ""
+        version: "v1"
+        kind: "Service"
+# add your configuration data here as key-value pairs

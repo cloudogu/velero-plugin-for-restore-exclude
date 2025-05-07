@@ -5,7 +5,7 @@ MAKEFILES_VERSION=9.9.1
 MOCKERY_VERSION=v2.53.3
 MOCKERY_IGNORED=vendor,build,docs,generated
 
-VERSION  ?= 0.1.0
+VERSION=0.1.0
 
 GOOS   ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
@@ -22,3 +22,4 @@ include build/make/clean.mk
 include build/make/digital-signature.mk
 include build/make/mocks.mk
 include build/make/k8s.mk
+include build/make/release.mk
