@@ -255,7 +255,7 @@ func TestRestorePluginV2_Progress(t *testing.T) {
 				operationID: "",
 			},
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
-				return assert.ErrorContains(t, err, "Operation ID  is invalid.")
+				return assert.ErrorContains(t, err, "operation ID  is invalid")
 			},
 		},
 		{
@@ -264,7 +264,7 @@ func TestRestorePluginV2_Progress(t *testing.T) {
 				operationID: "2/2/2",
 			},
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
-				return assert.ErrorContains(t, err, "Operation ID 2/2/2 is invalid.")
+				return assert.ErrorContains(t, err, "operation ID 2/2/2 is invalid")
 			},
 		},
 		{
@@ -273,7 +273,7 @@ func TestRestorePluginV2_Progress(t *testing.T) {
 				operationID: "2/2",
 			},
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
-				return assert.ErrorContains(t, err, "Operation ID 2/2 is invalid.")
+				return assert.ErrorContains(t, err, "operation ID 2/2 is invalid")
 			},
 		},
 		{
