@@ -53,35 +53,37 @@ type BackupSpec struct {
 	// +nullable
 	ExcludedResources []string `json:"excludedResources,omitempty"`
 
-	// IncludedClusterScopeResources is a slice of cluster scope
+	// IncludedClusterScopedResources is a slice of cluster-scoped
 	// resource type names to include in the backup.
-	// If set to "*", all cluster scope resource types are included.
-	// The default value is empty, which means only related cluster
-	// scope resources are included.
+	// If set to "*", all cluster-scoped resource types are included.
+	// The default value is empty, which means only related
+	// cluster-scoped resources are included.
 	// +optional
 	// +nullable
-	IncludedClusterScopeResources []string `json:"includedClusterScopeResources,omitempty"`
+	IncludedClusterScopedResources []string `json:"includedClusterScopedResources,omitempty"`
 
-	// ExcludedClusterScopeResources is a slice of cluster scope
+	// ExcludedClusterScopedResources is a slice of cluster-scoped
 	// resource type names to exclude from the backup.
-	// If set to "*", all cluster scope resource types are excluded.
+	// If set to "*", all cluster-scoped resource types are excluded.
+	// The default value is empty.
 	// +optional
 	// +nullable
-	ExcludedClusterScopeResources []string `json:"excludedClusterScopeResources,omitempty"`
+	ExcludedClusterScopedResources []string `json:"excludedClusterScopedResources,omitempty"`
 
-	// IncludedNamespacedResources is a slice of namespace scope
+	// IncludedNamespaceScopedResources is a slice of namespace-scoped
 	// resource type names to include in the backup.
 	// The default value is "*".
 	// +optional
 	// +nullable
-	IncludedNamespacedResources []string `json:"includedNamespacedResources,omitempty"`
+	IncludedNamespaceScopedResources []string `json:"includedNamespaceScopedResources,omitempty"`
 
-	// ExcludedNamespacedResources is a slice of namespace scope
+	// ExcludedNamespaceScopedResources is a slice of namespace-scoped
 	// resource type names to exclude from the backup.
-	// If set to "*", all namespace scope resource types are excluded.
+	// If set to "*", all namespace-scoped resource types are excluded.
+	// The default value is empty.
 	// +optional
 	// +nullable
-	ExcludedNamespacedResources []string `json:"excludedNamespacedResources,omitempty"`
+	ExcludedNamespaceScopedResources []string `json:"excludedNamespaceScopedResources,omitempty"`
 
 	// LabelSelector is a metav1.LabelSelector to filter with
 	// when adding individual objects to the backup. If empty
@@ -157,12 +159,34 @@ type BackupSpec struct {
 	CSISnapshotTimeout metav1.Duration `json:"csiSnapshotTimeout,omitempty"`
 
 	// ItemOperationTimeout specifies the time used to wait for asynchronous BackupItemAction operations
-	// The default value is 1 hour.
+	// The default value is 4 hour.
 	// +optional
 	ItemOperationTimeout metav1.Duration `json:"itemOperationTimeout,omitempty"`
-	// ResourcePolicies specifies the referenced resource policies that backup should follow
+	// ResourcePolicy specifies the referenced resource policies that backup should follow
 	// +optional
-	ResourcePolicies *v1.TypedLocalObjectReference `json:"resourcePolices,omitempty"`
+	ResourcePolicy *v1.TypedLocalObjectReference `json:"resourcePolicy,omitempty"`
+
+	// SnapshotMoveData specifies whether snapshot data should be moved
+	// +optional
+	// +nullable
+	SnapshotMoveData *bool `json:"snapshotMoveData,omitempty"`
+
+	// DataMover specifies the data mover to be used by the backup.
+	// If DataMover is "" or "velero", the built-in data mover will be used.
+	// +optional
+	DataMover string `json:"datamover,omitempty"`
+
+	// UploaderConfig specifies the configuration for the uploader.
+	// +optional
+	// +nullable
+	UploaderConfig *UploaderConfigForBackup `json:"uploaderConfig,omitempty"`
+}
+
+// UploaderConfigForBackup defines the configuration for the uploader when doing backup.
+type UploaderConfigForBackup struct {
+	// ParallelFilesUpload is the number of files parallel uploads to perform when using the uploader.
+	// +optional
+	ParallelFilesUpload int `json:"parallelFilesUpload,omitempty"`
 }
 
 // BackupHooks contains custom behaviors that should be executed at different phases of the backup.
@@ -249,12 +273,12 @@ type ExecHook struct {
 type HookErrorMode string
 
 const (
-	// HookErrorModeContinue means that an error from a hook is acceptable, and the backup can
-	// proceed.
+	// HookErrorModeContinue means that an error from a hook is acceptable and the backup/restore can
+	// proceed with the rest of hooks' execution. This backup/restore should be in `PartiallyFailed` status.
 	HookErrorModeContinue HookErrorMode = "Continue"
 
-	// HookErrorModeFail means that an error from a hook is problematic, and the backup should be in
-	// error.
+	// HookErrorModeFail means that an error from a hook is problematic and Velero should stop executing following hooks.
+	// This backup/restore should be in `PartiallyFailed` status.
 	HookErrorModeFail HookErrorMode = "Fail"
 )
 
@@ -422,6 +446,11 @@ type BackupStatus struct {
 	// BackupItemAction operations for this backup which ended with an error.
 	// +optional
 	BackupItemOperationsFailed int `json:"backupItemOperationsFailed,omitempty"`
+
+	// HookStatus contains information about the status of the hooks.
+	// +optional
+	// +nullable
+	HookStatus *HookStatus `json:"hookStatus,omitempty"`
 }
 
 // BackupProgress stores information about the progress of a Backup's execution.
@@ -437,6 +466,19 @@ type BackupProgress struct {
 	// backup tarball so far.
 	// +optional
 	ItemsBackedUp int `json:"itemsBackedUp,omitempty"`
+}
+
+// HookStatus stores information about the status of the hooks.
+type HookStatus struct {
+	// HooksAttempted is the total number of attempted hooks
+	// Specifically, HooksAttempted represents the number of hooks that failed to execute
+	// and the number of hooks that executed successfully.
+	// +optional
+	HooksAttempted int `json:"hooksAttempted,omitempty"`
+
+	// HooksFailed is the total number of hooks which ended with an error
+	// +optional
+	HooksFailed int `json:"hooksFailed,omitempty"`
 }
 
 // +genclient
