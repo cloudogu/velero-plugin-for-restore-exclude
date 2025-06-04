@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.0] - 2025-06-04
+### Changed
+- [#3] Updated outdated dependencies
+
 ## [v0.1.0] - 2025-05-07
 ### Added
 - [#2] Basic functionality to exclude resources in Velero restore
