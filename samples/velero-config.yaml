@@ -1,8 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  # any name can be used; Velero uses the labels (below)
-  # to identify it rather than the name
+  # this is the name of the configmap. In velero it is
+  # used to look up the config of the plugin
+  # "velero-plugin-for-restore-exclude"
   name: velero-plugin-for-restore-exclude-config
 
   # must be in the namespace where the velero deployment
