@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.1] - 2025-07-11
+### Changed
+- [#5] Update samples description to reflect the importance of the configmap name
+
 ## [v1.0.0] - 2025-06-04
 ### Changed
 - [#3] Updated outdated dependencies
