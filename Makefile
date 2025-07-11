@@ -5,7 +5,7 @@ MAKEFILES_VERSION=9.9.1
 MOCKERY_VERSION=v2.53.3
 MOCKERY_IGNORED=vendor,build,docs,generated
 
-VERSION=1.0.0
+VERSION=1.0.1
 
 GOOS   ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
