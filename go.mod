@@ -1,6 +1,6 @@
 module github.com/cloudogu/velero-plugin-for-restore-exclude
 
-go 1.24.3
+go 1.26.1
 
 require (
 	github.com/sirupsen/logrus v1.9.3
