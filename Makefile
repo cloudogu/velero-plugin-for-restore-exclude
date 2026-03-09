@@ -1,6 +1,6 @@
 ARTIFACT_ID=velero-plugin-for-restore-exclude
 IMAGE=cloudogu/${ARTIFACT_ID}:${VERSION}
-GOTAG?=1.24
+GOTAG?=1.26.1
 MAKEFILES_VERSION=9.9.1
 MOCKERY_VERSION=v2.53.3
 MOCKERY_IGNORED=vendor,build,docs,generated
